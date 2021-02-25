@@ -1,0 +1,9 @@
+Flask LibreOffice document converter contributions
+==========
+If you wish to make a contribution to the plugin please follow the steps outlined in this document to ensure that we see it:
+
+1. Create a ticket describing the change (https://code.ovgu.de/ovgu-urz/moodle-fileconverter_flasksoffice/issues)
+2. Create a pull request
+3. Link the pull request in the ticket you created
+
+Please ensure that code follows the Moodle coding standards: https://docs.moodle.org/dev/Coding_style
