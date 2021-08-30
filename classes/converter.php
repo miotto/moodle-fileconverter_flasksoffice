@@ -145,9 +145,9 @@ class converter implements \core_files\converter_interface {
         curl_setopt($curl, CURLOPT_URL, $location);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_TIMEOUT, 10);
-        $fserver_respond = curl_exec($curl);
+        $fserverrespond = curl_exec($curl);
         curl_close($curl);
-        if ($fserver_respond != 'OK') {
+        if ($fserverrespond != 'OK') {
             throw new coding_exception('The document conversion server is not accessible at the URL '.$location);
         }
 
@@ -165,16 +165,16 @@ class converter implements \core_files\converter_interface {
             return $this;
         }
 
-        $filePath = $localpath ?? $remotepath;
-        $type= '';
-        $fileName = $file->get_filename();
-        $contenthash_f7 = substr($contenthash, 0, 7);
-        $data = array('file' => curl_file_create($filePath, $type, $contenthash_f7.$fileName));
+        $filepath = $localpath ?? $remotepath;
+        $type = '';
+        $filename = $file->get_filename();
+        $contenthashf7 = substr($contenthash, 0, 7);
+        $data = array('file' => curl_file_create($filepath, $type, $contenthashf7.$filename));
 
         $location = $this->baseurl . '/upload';
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $location);
-        curl_setopt($curl, CURLOPT_HTTPHEADER,array('Content-Type: multipart/form-data'));
+        curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: multipart/form-data'));
         curl_setopt($curl, CURLOPT_POST, 1);
         curl_setopt($curl, CURLOPT_TIMEOUT, 30);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -183,11 +183,11 @@ class converter implements \core_files\converter_interface {
         $response = curl_exec($curl);
 
         if (curl_errno($curl)) {
-            $error_msg = curl_error($curl);
+            $errormsg = curl_error($curl);
         }
         curl_close($curl);
-        if (isset($error_msg)) {
-            throw new coding_exception($error_msg);
+        if (isset($errormsg)) {
+            throw new coding_exception($errormsg);
         }
 
         $json = json_decode($response, true);
@@ -207,7 +207,7 @@ class converter implements \core_files\converter_interface {
         $source = $sourceurl->out(false);
 
         $tmp = make_request_directory();
-        $downloadto = $tmp . '/' . ltrim($lastelement, $contenthash_f7);
+        $downloadto = $tmp . '/' . ltrim($lastelement, $contenthashf7);
 
         $options = ['filepath' => $downloadto, 'timeout' => 15, 'followlocation' => true, 'maxredirs' => 5];
         $success = $client->download_one($source, null, $options);
