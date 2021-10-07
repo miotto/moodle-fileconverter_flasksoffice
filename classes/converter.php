@@ -131,40 +131,63 @@ class converter implements \core_files\converter_interface {
         global $CFG;
 
         $file = $conversion->get_sourcefile();
-        $filepath = $file->get_filepath();
-        $fromformat = pathinfo($file->get_filename(), PATHINFO_EXTENSION);
-        $format = $conversion->get('targetformat');
+        $contenthash = $file->get_contenthash();
 
-        $uniqdir = make_unique_writable_directory(make_temp_directory('core_file/conversions'));
-        \core_shutdown_manager::register_function('remove_dir', array($uniqdir));
-        $localfilename = $file->get_id() . '.' . $fromformat;
-        $filename = $uniqdir . '/' . $localfilename;
-        $file->copy_content_to($filename);
-
-        $data = array('file' => curl_file_create($filename));
+        $originalname = $file->get_filename();
+        if (strpos($originalname, '.') === false) {
+            $conversion->set('status', conversion::STATUS_FAILED);
+            return $this;
+        }
 
         // Test server, if available.
-        $curl = new curl();
+        $curl = curl_init();
         $location = $this->baseurl;
-        $options = [
-            'CURLOPT_RETURNTRANSFER' => true
-        ];
-        $curl->post($location, $data, $options);
-        if ($curl->errno != 0) {
-            throw new coding_exception($curl->error, $curl->errno);
+        curl_setopt($curl, CURLOPT_URL, $location);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 10);
+        $fserverrespond = curl_exec($curl);
+        curl_close($curl);
+        if ($fserverrespond != 'OK') {
+            throw new coding_exception('The document conversion server is not accessible at the URL '.$location);
         }
 
         // Post/upload file to doc-server.
-        $curl = new curl();
+        $fs = get_file_storage();
+        $filesystem = $fs->get_file_system();
+        if ($filesystem->is_file_readable_locally_by_storedfile($file)) {
+            $localpath = $filesystem->get_local_path_from_storedfile($file);
+        } else if ($filesystem->is_file_readable_remotely_by_storedfile($file)) {
+            $remotepath = $filesystem->get_remote_path_from_storedfile($file);
+        } else if ($filesystem->is_file_readable_locally_by_storedfile($file, true)) {
+            $localpath = $filesystem->get_local_path_from_storedfile($file, true);
+        } else {
+            $conversion->set('status', conversion::STATUS_FAILED);
+            return $this;
+        }
+
+        $filepath = $localpath ?? $remotepath;
+        $type = '';
+        $filename = $file->get_filename();
+        $contenthashf7 = substr($contenthash, 0, 7);
+        $data = array('file' => curl_file_create($filepath, $type, $contenthashf7.$filename));
+
         $location = $this->baseurl . '/upload';
-        $options = [
-            'CURLOPT_RETURNTRANSFER' => true,
-            'CURLOPT_HTTPHEADER' => array('Content-Type: multipart/form-data'),
-            'CURLOPT_HEADER' => false,
-        ];
-        $response = $curl->post($location, $data, $options);
-        if ($curl->errno != 0) {
-            throw new coding_exception($curl->error, $curl->errno);
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, $location);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: multipart/form-data'));
+        curl_setopt($curl, CURLOPT_POST, 1);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 30);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_HEADER, false);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+        $response = curl_exec($curl);
+
+        if (curl_errno($curl)) {
+            $errormsg = curl_error($curl);
+        }
+        curl_close($curl);
+        if (isset($errormsg)) {
+            throw new coding_exception($errormsg);
         }
 
         $json = json_decode($response, true);
@@ -184,7 +207,7 @@ class converter implements \core_files\converter_interface {
         $source = $sourceurl->out(false);
 
         $tmp = make_request_directory();
-        $downloadto = $tmp . '/' . $lastelement;
+        $downloadto = $tmp . '/' . ltrim($lastelement, $contenthashf7);
 
         $options = ['filepath' => $downloadto, 'timeout' => 15, 'followlocation' => true, 'maxredirs' => 5];
         $success = $client->download_one($source, null, $options);
@@ -194,10 +217,10 @@ class converter implements \core_files\converter_interface {
         if ($success) {
             $conversion->store_destfile_from_path($downloadto);
             $conversion->set('status', conversion::STATUS_COMPLETE);
+            $conversion->update();
         } else {
             $conversion->set('status', conversion::STATUS_FAILED);
         }
-        $conversion->update();
 
         // Trigger event.
         list($context, $course, $cm) = get_context_info_array($file->get_contextid());
@@ -210,7 +233,7 @@ class converter implements \core_files\converter_interface {
                     'sourcefileid' => $conversion->get('sourcefileid'),
                     'targetformat' => $conversion->get('targetformat'),
                     'id' => $conversion->get('id'),
-                    'status' => $this->status
+                    'status' => $conversion->get('status')
                 ));
             $event = \fileconverter_flasksoffice\event\document_conversion::create($eventinfo);
             $event->trigger();
