@@ -194,6 +194,13 @@ class converter implements \core_files\converter_interface {
         if (!empty($json->error)) {
             throw new coding_exception($json->error->code . ': ' . $json->error->message . '. Response was: '.$response);
         }
+        if (isset($json['result']['doc-conv-failed'])) {
+            if ($json['result']['doc-conv-failed'] == 'TimeoutExpired') {
+                $conversion->set('status', conversion::STATUS_FAILED);
+                $conversion->update();
+                return $this;
+            }
+        }
         if (!isset($json['result']['pdf']) OR is_null($json)) {
             throw new coding_exception('Response was: '.$response);
         }
