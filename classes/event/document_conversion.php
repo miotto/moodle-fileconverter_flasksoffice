@@ -24,8 +24,6 @@
 
 namespace fileconverter_flasksoffice\event;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * The Flask LibreOffice document conversion event.
  *

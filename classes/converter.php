@@ -23,8 +23,6 @@
  */
 namespace fileconverter_flasksoffice;
 
-defined('MOODLE_INTERNAL') || die();
-
 use stored_file;
 use moodle_exception;
 use moodle_url;
@@ -201,7 +199,7 @@ class converter implements \core_files\converter_interface {
                 return $this;
             }
         }
-        if (!isset($json['result']['pdf']) OR is_null($json)) {
+        if (!isset($json['result']['pdf']) || is_null($json)) {
             throw new coding_exception('Response was: '.$response);
         }
 
