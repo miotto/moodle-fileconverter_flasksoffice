@@ -344,6 +344,8 @@ class converter implements \core_files\converter_interface {
             'xls', 'xlsx', 'ods', 'csv',
             // Presentation file formats.
             'ppt', 'pptx', 'odp',
+            // Image file formats.
+            'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'svg', 'webp',
             );
         return implode(', ', $conversions);
     }
