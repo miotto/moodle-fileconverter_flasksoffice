@@ -56,6 +56,16 @@ class converter implements \core_files\converter_interface {
         'ppt' => 'application/vnd.ms-powerpoint',
         'pptx' => 'application/vnd.ms-powerpoint',
         'odp' => 'application/vnd.oasis.opendocument.presentation',
+        // Image file formats.
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'gif' => 'image/gif',
+        'bmp' => 'image/bmp',
+        'tiff' => 'image/tiff',
+        'tif' => 'image/tiff',
+        'svg' => 'image/svg+xml',
+        'webp' => 'image/webp',
     ];
 
     /** @var array $export List of supported export file formats */
