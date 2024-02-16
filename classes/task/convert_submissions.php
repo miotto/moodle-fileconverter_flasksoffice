@@ -55,7 +55,7 @@ class convert_submissions extends scheduled_task {
 
         $params = array(
             'converter' => '\fileconverter_flasksoffice\converter',
-            'status' => '1'
+            'status' => '1',
         );
         $pendingconversions = $DB->get_recordset('file_conversion', $params, 'sourcefileid DESC', 'sourcefileid, targetformat');
 

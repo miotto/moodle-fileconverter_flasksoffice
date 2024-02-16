@@ -28,7 +28,7 @@ use moodle_exception;
 use moodle_url;
 use coding_exception;
 use curl;
-use \core_files\conversion;
+use core_files\conversion;
 
 /**
  * Class for converting files between different formats using flask rest server.
@@ -70,7 +70,7 @@ class converter implements \core_files\converter_interface {
 
     /** @var array $export List of supported export file formats */
     private static $exports = [
-        'pdf' => 'application/pdf'
+        'pdf' => 'application/pdf',
     ];
 
     /**
@@ -248,7 +248,7 @@ class converter implements \core_files\converter_interface {
                     'sourcefileid' => $conversion->get('sourcefileid'),
                     'targetformat' => $conversion->get('targetformat'),
                     'id' => $conversion->get('id'),
-                    'status' => $conversion->get('status')
+                    'status' => $conversion->get('status'),
                 ));
             $event = \fileconverter_flasksoffice\event\document_conversion::create($eventinfo);
             $event->trigger();
@@ -290,7 +290,7 @@ class converter implements \core_files\converter_interface {
             'filearea' => 'fileconverter_flasksoffice',
             'itemid' => 0,
             'filepath' => '/',
-            'filename' => 'source.docx'
+            'filename' => 'source.docx',
         ];
 
         // Get the fixture doc file content and generate and stored_file object.
