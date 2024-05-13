@@ -177,12 +177,12 @@ class converter implements \core_files\converter_interface {
         $type = '';
         $filename = $file->get_filename();
         $contenthashf7 = substr($contenthash, 0, 7);
-        $data = array('file' => curl_file_create($filepath, $type, $contenthashf7.$filename));
+        $data = ['file' => curl_file_create($filepath, $type, $contenthashf7.$filename)];
 
         $location = $this->baseurl . '/upload';
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $location);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: multipart/form-data'));
+        curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type: multipart/form-data']);
         curl_setopt($curl, CURLOPT_POST, 1);
         curl_setopt($curl, CURLOPT_TIMEOUT, 30);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -241,15 +241,15 @@ class converter implements \core_files\converter_interface {
         list($context, $course, $cm) = get_context_info_array($file->get_contextid());
         // Only it is related to a course. Config test excluded.
         if (!is_null($course)) {
-            $eventinfo = array(
+            $eventinfo = [
                 'context' => $context,
                 'courseid' => $course->id,
-                'other' => array(
+                'other' => [
                     'sourcefileid' => $conversion->get('sourcefileid'),
                     'targetformat' => $conversion->get('targetformat'),
                     'id' => $conversion->get('id'),
                     'status' => $conversion->get('status'),
-                ));
+                ]];
             $event = \fileconverter_flasksoffice\event\document_conversion::create($eventinfo);
             $event->trigger();
         }
@@ -337,7 +337,7 @@ class converter implements \core_files\converter_interface {
      * @return  string
      */
     public function get_supported_conversions() {
-        $conversions = array(
+        $conversions = [
             // Document file formats.
             'doc', 'docx', 'rtf', 'odt', 'html', 'txt',
             // Spreadsheet file formats.
@@ -346,7 +346,7 @@ class converter implements \core_files\converter_interface {
             'ppt', 'pptx', 'odp',
             // Image file formats.
             'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'svg', 'webp',
-            );
+        ];
         return implode(', ', $conversions);
     }
 }

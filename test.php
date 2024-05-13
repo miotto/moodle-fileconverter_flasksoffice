@@ -36,7 +36,7 @@ $strheading = get_string('test_conversion', 'fileconverter_flasksoffice');
 $PAGE->navbar->add(get_string('administrationsite'));
 $PAGE->navbar->add(get_string('plugins', 'admin'));
 $PAGE->navbar->add(get_string('pluginname', 'fileconverter_flasksoffice'),
-        new moodle_url('/admin/settings.php', array('section' => 'fileconverterflasksoffice')));
+        new moodle_url('/admin/settings.php', ['section' => 'fileconverterflasksoffice']));
 $PAGE->navbar->add($strheading);
 $PAGE->set_heading($strheading);
 $PAGE->set_title($strheading);
@@ -53,7 +53,7 @@ if ($sendpdf) {
 $result = $converter->are_requirements_met();
 if ($result) {
     $msg = $OUTPUT->notification(get_string('test_conversionready', 'fileconverter_flasksoffice'), 'success');
-    $pdflink = new moodle_url($PAGE->url, array('sendpdf' => 1, 'sesskey' => sesskey()));
+    $pdflink = new moodle_url($PAGE->url, ['sendpdf' => 1, 'sesskey' => sesskey()]);
     $msg .= html_writer::link($pdflink, get_string('test_conversion', 'fileconverter_flasksoffice'));
     $msg .= html_writer::empty_tag('br');
 } else {
@@ -65,7 +65,7 @@ if ($result) {
         $msg = $OUTPUT->notification(get_string('test_conversionnotready', 'fileconverter_flasksoffice'), 'warning');
     }
 }
-$returl = new moodle_url('/admin/settings.php', array('section' => 'fileconverterflasksoffice'));
+$returl = new moodle_url('/admin/settings.php', ['section' => 'fileconverterflasksoffice']);
 $msg .= $OUTPUT->continue_button($returl);
 
 echo $OUTPUT->header();

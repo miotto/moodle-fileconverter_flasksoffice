@@ -53,10 +53,10 @@ class convert_submissions extends scheduled_task {
         global $DB;
         mtrace('flasksoffice: Processing pending document conversions');
 
-        $params = array(
+        $params = [
             'converter' => '\fileconverter_flasksoffice\converter',
             'status' => '1',
-        );
+        ];
         $pendingconversions = $DB->get_recordset('file_conversion', $params, 'sourcefileid DESC', 'sourcefileid, targetformat');
 
         $fs = get_file_storage();
