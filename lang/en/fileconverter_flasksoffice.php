@@ -24,20 +24,18 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$string['disabled'] = 'Disabled';
+$string['event:document_conversion'] = 'Document conversion';
 $string['pluginname'] = 'Flask soffice';
 
-$string['disabled'] = 'Disabled';
+$string['preparesubmissionsforannotation'] = 'Prepare submissions for annotation';
 $string['privacy:metadata:fileconverter_flasksoffice:externalpurpose'] = 'This information is sent to Flask rest server in order the file to be converted to an alternative format. The file is temporarily kept on Flask rest server and gets deleted after the conversion is done.';
 $string['privacy:metadata:fileconverter_flasksoffice:filecontent'] = 'The content of the file.';
 $string['privacy:metadata:fileconverter_flasksoffice:filemimetype'] = 'The MIME type of the file.';
 $string['privacy:metadata:fileconverter_flasksoffice:params'] = 'The query parameters passed to Flask rest server.';
-$string['event:document_conversion'] = 'Document conversion';
-$string['test_converter'] = 'Test this converter is working properly.';
-$string['test_conversion'] = 'Test document conversion';
-$string['test_conversionready'] = 'This document converter is configured properly.';
-$string['test_conversionnotready'] = 'This document converter is not configured properly.';
-
 $string['settings:flasksofficeurl'] = 'Document Server URL';
 $string['settings:flasksofficeurl_help'] = 'Specify the URL at which document server can be reached *by Moodle*. The URL is never resolved in the browser, only in CURL requests by Moodle, so it will be resolved only in the local network.';
-$string['preparesubmissionsforannotation'] = 'Prepare submissions for annotation';
-
+$string['test_conversion'] = 'Test document conversion';
+$string['test_conversionnotready'] = 'This document converter is not configured properly.';
+$string['test_conversionready'] = 'This document converter is configured properly.';
+$string['test_converter'] = 'Test this converter is working properly.';
