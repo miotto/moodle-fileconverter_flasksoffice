@@ -203,14 +203,19 @@ class converter implements \core_files\converter_interface {
             throw new coding_exception($json->error->code . ': ' . $json->error->message . '. Response was: '.$response);
         }
         if (isset($json['result']['doc-conv-failed'])) {
-            if ($json['result']['doc-conv-failed'] == 'TimeoutExpired') {
+            if (($json['result']['doc-conv-failed'] == 'TimeoutExpired') ||
+                ($json['result']['doc-conv-failed'] == 'LibreOfficeError')){
                 $conversion->set('status', conversion::STATUS_FAILED);
                 $conversion->update();
+                mtrace('flasksoffice doc-conv-failed: '.$json['result']['doc-conv-failed']);
                 return $this;
             }
         }
         if (!isset($json['result']['pdf']) || is_null($json)) {
-            throw new coding_exception('Response was: '.$response);
+            $conversion->set('status', conversion::STATUS_FAILED);
+            $conversion->update();
+            mtrace($response);
+            return $this;
         }
 
         $strarray = explode('/', $json['result']['pdf']);
