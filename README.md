@@ -35,5 +35,5 @@ Visit Site administration ► Plugins ► Document converters ► Manage documen
 
 You will need to ensure that it is:
 
-1. Configured to use a [Flask LibreOffice rest server](https://github.com/miotto/server_fileconverter_flasksoffice).
+1. Configured to use a [Flask LibreOffice rest server](https://github.com/miotto/server_fileconverter_flasksoffice). A *new* alternative is a [FastAPI LibreOffice rest server](https://github.com/miotto/server_fileconverter_fastapisoffice).
 2. Working by using the 'Test this converter is working properly' link on the settings page.
