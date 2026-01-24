@@ -35,6 +35,14 @@ $string['privacy:metadata:fileconverter_flasksoffice:filemimetype'] = 'The MIME 
 $string['privacy:metadata:fileconverter_flasksoffice:params'] = 'The query parameters passed to Flask rest server.';
 $string['settings:flasksofficeurl'] = 'Document Server URL';
 $string['settings:flasksofficeurl_help'] = 'Specify the URL at which document server can be reached *by Moodle*. The URL is never resolved in the browser, only in CURL requests by Moodle, so it will be resolved only in the local network.';
+$string['missingconversionserver'] = 'The document conversion server is not accessible at the URL {$a}.';
+$string['missingfileextension'] = 'The file to be converted does not seem to have an extension at the end of its name.';
+$string['missingfilepath'] = 'The file path cannot be found.';
+$string['curlerrno'] = 'Running curl generates an error {$a}.';
+$string['jsonerror'] = 'The JSON file has an error {$a}.';
+$string['conversionfailed'] = 'Conversion failed: {$a}.';
+$string['downloadfailed'] = 'Moodle could not download the converted file {$a}.';
+
 $string['test_conversion'] = 'Test document conversion';
 $string['test_conversionnotready'] = 'This document converter is not configured properly.';
 $string['test_conversionready'] = 'This document converter is configured properly.';

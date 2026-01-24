@@ -36,8 +36,10 @@ require_capability('moodle/site:config', context_system::instance());
 $strheading = get_string('test_conversion', 'fileconverter_flasksoffice');
 $PAGE->navbar->add(get_string('administrationsite'));
 $PAGE->navbar->add(get_string('plugins', 'admin'));
-$PAGE->navbar->add(get_string('pluginname', 'fileconverter_flasksoffice'),
-        new moodle_url('/admin/settings.php', ['section' => 'fileconverterflasksoffice']));
+$PAGE->navbar->add(
+    get_string('pluginname', 'fileconverter_flasksoffice'),
+    new moodle_url('/admin/settings.php', ['section' => 'fileconverterflasksoffice'])
+);
 $PAGE->navbar->add($strheading);
 $PAGE->set_heading($strheading);
 $PAGE->set_title($strheading);
@@ -58,7 +60,6 @@ if ($result) {
     $msg .= html_writer::link($pdflink, get_string('test_conversion', 'fileconverter_flasksoffice'));
     $msg .= html_writer::empty_tag('br');
 } else {
-
     // Diagnostics time.
     $msg = '';
 

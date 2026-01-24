@@ -26,6 +26,7 @@ namespace fileconverter_flasksoffice;
 use stored_file;
 use moodle_exception;
 use moodle_url;
+use core\url;
 use coding_exception;
 use curl;
 use core_files\conversion;
@@ -38,7 +39,6 @@ use core_files\conversion;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class converter implements \core_files\converter_interface {
-
     /** @var array $imports List of supported import file formats */
     private static $imports = [
         // Document file formats.
@@ -128,26 +128,12 @@ class converter implements \core_files\converter_interface {
         return true;
     }
 
-
     /**
-     * Convert a document to a new format and return a conversion object relating to the conversion in progress.
+     * Check if the conversion server is available.
      *
-     * @param   \core_files\conversion $conversion The file to be converted
-     * @return  this
+     * @throws \Exception
      */
-    public function start_document_conversion(\core_files\conversion $conversion) {
-        global $CFG;
-
-        $file = $conversion->get_sourcefile();
-        $contenthash = $file->get_contenthash();
-
-        $originalname = $file->get_filename();
-        if (strpos($originalname, '.') === false) {
-            $conversion->set('status', conversion::STATUS_FAILED);
-            return $this;
-        }
-
-        // Test server, if available.
+    private function check_conversion_server() {
         $curl = curl_init();
         $location = $this->baseurl;
         curl_setopt($curl, CURLOPT_URL, $location);
@@ -156,28 +142,42 @@ class converter implements \core_files\converter_interface {
         $fserverrespond = curl_exec($curl);
         curl_close($curl);
         if ($fserverrespond != 'OK') {
-            throw new coding_exception('The document conversion server is not accessible at the URL '.$location);
+            throw new \Exception(get_string('missingconversionserver', 'fileconverter_flasksoffice', $location));
+        }
+    }
+
+    /**
+     * Upload the file and convert it on the conversion server.
+     *
+     * @param stored_file $filetobeconverted File to be converted
+     * @param string $ch7 First seven characters of the file object contenthash.
+     *
+     * @return string
+     * @throws \Exception
+     */
+    private function upload_convert_file($filetobeconverted, $ch7) {
+        $originalname = $filetobeconverted->get_filename();
+        if (strpos($originalname, '.') === false) {
+            throw new \Exception(get_string('missingfileextension', 'fileconverter_flasksoffice'));
         }
 
         // Post/upload file to doc-server.
         $fs = get_file_storage();
         $filesystem = $fs->get_file_system();
-        if ($filesystem->is_file_readable_locally_by_storedfile($file)) {
-            $localpath = $filesystem->get_local_path_from_storedfile($file);
-        } else if ($filesystem->is_file_readable_remotely_by_storedfile($file)) {
-            $remotepath = $filesystem->get_remote_path_from_storedfile($file);
-        } else if ($filesystem->is_file_readable_locally_by_storedfile($file, true)) {
-            $localpath = $filesystem->get_local_path_from_storedfile($file, true);
+        if ($filesystem->is_file_readable_locally_by_storedfile($filetobeconverted)) {
+            $localpath = $filesystem->get_local_path_from_storedfile($filetobeconverted);
+        } else if ($filesystem->is_file_readable_remotely_by_storedfile($filetobeconverted)) {
+            $remotepath = $filesystem->get_remote_path_from_storedfile($filetobeconverted);
+        } else if ($filesystem->is_file_readable_locally_by_storedfile($filetobeconverted, true)) {
+            $localpath = $filesystem->get_local_path_from_storedfile($filetobeconverted, true);
         } else {
-            $conversion->set('status', conversion::STATUS_FAILED);
-            return $this;
+            throw new \Exception(get_string('missingfilepath', 'fileconverter_flasksoffice'));
         }
 
         $filepath = $localpath ?? $remotepath;
         $type = '';
-        $filename = $file->get_filename();
-        $contenthashf7 = substr($contenthash, 0, 7);
-        $data = ['file' => curl_file_create($filepath, $type, $contenthashf7.$filename)];
+        $filename = $originalname;
+        $data = ['file' => curl_file_create($filepath, $type, $ch7 . $filename)];
 
         $location = $this->baseurl . '/upload';
         $curl = curl_init();
@@ -192,74 +192,103 @@ class converter implements \core_files\converter_interface {
 
         if (curl_errno($curl)) {
             $errormsg = curl_error($curl);
+            throw new \Exception(get_string('curlerrno', 'fileconverter_flasksoffice', $errormsg));
         }
         curl_close($curl);
-        if (isset($errormsg)) {
-            throw new coding_exception($errormsg);
-        }
 
         $json = json_decode($response, true);
         if (!empty($json->error)) {
-            throw new coding_exception($json->error->code . ': ' . $json->error->message . '. Response was: '.$response);
+            throw new \Exception(get_string('jsonerror', 'fileconverter_flasksoffice', $json->error->code . ': ' . $json->error->message . '. Response was: ' . $response));
         }
         if (isset($json['result']['doc-conv-failed'])) {
             if (($json['result']['doc-conv-failed'] == 'TimeoutExpired') ||
-                ($json['result']['doc-conv-failed'] == 'LibreOfficeError')){
-                $conversion->set('status', conversion::STATUS_FAILED);
-                $conversion->update();
-                mtrace('flasksoffice doc-conv-failed: '.$json['result']['doc-conv-failed']);
-                return $this;
+                ($json['result']['doc-conv-failed'] == 'LibreOfficeError')) {
+                mtrace('flasksoffice doc-conv-failed: ' . $json['result']['doc-conv-failed']);
+                throw new \Exception(get_string('conversionfailed', 'fileconverter_flasksoffice', $json['result']['doc-conv-failed']));
             }
         }
         if (!isset($json['result']['pdf']) || is_null($json)) {
-            $conversion->set('status', conversion::STATUS_FAILED);
-            $conversion->update();
             mtrace($response);
-            return $this;
+            throw new \Exception(get_string('conversionfailed', 'fileconverter_flasksoffice', $response));
         }
 
-        $strarray = explode('/', $json['result']['pdf']);
-        $lastelement = end($strarray);
+        return $json['result']['pdf'];
+    }
 
-        // Download file from doc-server.
+
+    /**
+     * Download a converted file to a local destination
+     *
+     * @param string $jsonfile Remote file location
+     * @param string $downloadto Location to store downloaded file locally
+     *
+     * @throws \Exception
+     */
+    private function download_converted_file($jsonfile, $downloadto) {
         $client = new curl();
-        $sourceurl = new moodle_url($this->baseurl . $json['result']['pdf']);
+        $sourceurl = new moodle_url($this->baseurl . $jsonfile);
         $source = $sourceurl->out(false);
-
-        $tmp = make_request_directory();
-        $downloadto = $tmp . '/' . ltrim($lastelement, $contenthashf7);
 
         $options = ['filepath' => $downloadto, 'timeout' => 15, 'followlocation' => true, 'maxredirs' => 5];
         $success = $client->download_one($source, null, $options);
         if ($client->errno != 0) {
-            throw new coding_exception($client->error, $client->errno);
+            throw new \Exception(get_string('downloadfailed', 'fileconverter_flasksoffice', $client->error . $client->errno));
         }
-        if ($success) {
+    }
+
+    /**
+     * Convert a document to a new format and return a conversion object relating to the conversion in progress.
+     *
+     * @param \core_files\conversion $conversion The file to be converted
+     *
+     * @return this
+     */
+    public function start_document_conversion(\core_files\conversion $conversion) {
+        $file = $conversion->get_sourcefile();
+        $contenthash = $file->get_contenthash();
+        $contenthashf7 = substr($contenthash, 0, 7);
+
+        try {
+            // Check if the conversion server is available.
+            $this->check_conversion_server();
+
+            // Upload the file and convert it on the conversion server.
+            $jsonpdf = $this->upload_convert_file($file, $contenthashf7);
+
+            // Extract filename and create downloadto file.
+            $strarray = explode('/', $jsonpdf);
+            $lastelement = end($strarray);
+            $tmp = make_request_directory();
+            $downloadto = $tmp . '/' . ltrim($lastelement, $contenthashf7);
+
+            // Download the converted file from conversion server.
+            $this->download_converted_file($jsonpdf, $downloadto);
+
             $conversion->store_destfile_from_path($downloadto);
             $conversion->set('status', conversion::STATUS_COMPLETE);
             $conversion->update();
-        } else {
+        } catch (\Exception $e) {
             $conversion->set('status', conversion::STATUS_FAILED);
+            $conversion->set('statusmessage', $e->getMessage());
+        } finally {
+            // Trigger event.
+            list($context, $course, $cm) = get_context_info_array($file->get_contextid());
+            // Only it is related to a course. Config test excluded.
+            if (!is_null($course)) {
+                $eventinfo = [
+                    'context' => $context,
+                    'courseid' => $course->id,
+                    'other' => [
+                        'sourcefileid' => $conversion->get('sourcefileid'),
+                        'targetformat' => $conversion->get('targetformat'),
+                        'id' => $conversion->get('id'),
+                        'status' => $conversion->get('status'),
+                    ]];
+                $event = \fileconverter_flasksoffice\event\document_conversion::create($eventinfo);
+                $event->trigger();
+            }
+            return $this;
         }
-
-        // Trigger event.
-        list($context, $course, $cm) = get_context_info_array($file->get_contextid());
-        // Only it is related to a course. Config test excluded.
-        if (!is_null($course)) {
-            $eventinfo = [
-                'context' => $context,
-                'courseid' => $course->id,
-                'other' => [
-                    'sourcefileid' => $conversion->get('sourcefileid'),
-                    'targetformat' => $conversion->get('targetformat'),
-                    'id' => $conversion->get('id'),
-                    'status' => $conversion->get('status'),
-                ]];
-            $event = \fileconverter_flasksoffice\event\document_conversion::create($eventinfo);
-            $event->trigger();
-        }
-
-        return $this;
     }
 
     /**
@@ -269,7 +298,6 @@ class converter implements \core_files\converter_interface {
      * @return  $this;
      */
     public function poll_conversion_status(conversion $conversion) {
-
         // If conversion is complete or failed return early.
         if ($conversion->get('status') == conversion::STATUS_COMPLETE
             || $conversion->get('status') == conversion::STATUS_FAILED) {
@@ -300,8 +328,7 @@ class converter implements \core_files\converter_interface {
 
         // Get the fixture doc file content and generate and stored_file object.
         $fs = get_file_storage();
-        $testdocx = $fs->get_file($filerecord['contextid'], $filerecord['component'], $filerecord['filearea'],
-                $filerecord['itemid'], $filerecord['filepath'], $filerecord['filename']);
+        $testdocx = $fs->get_file($filerecord['contextid'], $filerecord['component'], $filerecord['filearea'], $filerecord['itemid'], $filerecord['filepath'], $filerecord['filename']);
 
         if (!$testdocx) {
             $fixturefile = dirname(__DIR__) . '/tests/fixtures/source.docx';
@@ -317,6 +344,9 @@ class converter implements \core_files\converter_interface {
 
         // Convert the doc file to pdf and send it direct to the browser.
         $this->start_document_conversion($conversion);
+        if ($conversion->get('status') === conversion::STATUS_FAILED) {
+            throw new \Exception(get_string('conversionfailed', 'fileconverter_flasksoffice', 'Testfile'));
+        }
 
         $testfile = $conversion->get_destfile();
         readfile_accel($testfile, 'application/pdf', true);

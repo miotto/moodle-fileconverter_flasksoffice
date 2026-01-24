@@ -32,14 +32,12 @@ namespace fileconverter_flasksoffice\event;
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class document_conversion extends \core\event\base {
-
     /**
      * Init method.
      */
     protected function init() {
         $this->data['crud'] = 'c';
         $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
-
     }
 
     /**

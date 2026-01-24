@@ -25,10 +25,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
-    $settings->add(new admin_setting_configtext('fileconverter_flasksoffice/flasksofficeurl',
-        get_string('settings:flasksofficeurl', 'fileconverter_flasksoffice'),
-        get_string('settings:flasksofficeurl_help', 'fileconverter_flasksoffice'),
-        ''));
+    $settings->add(
+        new admin_setting_configtext(
+            'fileconverter_flasksoffice/flasksofficeurl',
+            get_string('settings:flasksofficeurl', 'fileconverter_flasksoffice'),
+            get_string('settings:flasksofficeurl_help', 'fileconverter_flasksoffice'),
+            ''
+        )
+    );
 
     $url = new moodle_url('/files/converter/flasksoffice/test.php');
     $link = html_writer::link($url, get_string('test_converter', 'fileconverter_flasksoffice'));
